@@ -1,0 +1,231 @@
+{
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "view-in-github",
+        "colab_type": "text"
+      },
+      "source": [
+        "<a href=\"https://colab.research.google.com/github/Tanimu01/ArewaDS-Deep-Learning/blob/main/TensorFlow_with_GPU.ipynbreal\" target=\"_parent\"><img src=\"https://colab.research.google.com/assets/colab-badge.svg\" alt=\"Open In Colab\"/></a>"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "tMce8muBqXQP"
+      },
+      "source": [
+        "# Tensorflow with GPU\n",
+        "\n",
+        "This notebook provides an introduction to computing on a [GPU](https://cloud.google.com/gpu) in Colab. In this notebook you will connect to a GPU, and then run some basic TensorFlow operations on both the CPU and a GPU, observing the speedup provided by using the GPU.\n"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "oM_8ELnJq_wd"
+      },
+      "source": [
+        "## Enabling and testing the GPU\n",
+        "\n",
+        "First, you'll need to enable GPUs for the notebook:\n",
+        "\n",
+        "- Navigate to Edit→Notebook Settings\n",
+        "- select GPU from the Hardware Accelerator drop-down\n",
+        "\n",
+        "Next, we'll confirm that we can connect to the GPU with tensorflow:"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 2,
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/",
+          "height": 227
+        },
+        "id": "sXnDmXR7RDr2",
+        "outputId": "d986e26f-0815-44d7-bebf-b27ea69bc1fa"
+      },
+      "outputs": [
+        {
+          "output_type": "error",
+          "ename": "SystemError",
+          "evalue": "GPU device not found",
+          "traceback": [
+            "\u001b[0;31m---------------------------------------------------------------------------\u001b[0m",
+            "\u001b[0;31mSystemError\u001b[0m                               Traceback (most recent call last)",
+            "\u001b[0;32m<ipython-input-2-d1680108c58e>\u001b[0m in \u001b[0;36m<cell line: 3>\u001b[0;34m()\u001b[0m\n\u001b[1;32m      2\u001b[0m \u001b[0mdevice_name\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0mtf\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mtest\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mgpu_device_name\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m      3\u001b[0m \u001b[0;32mif\u001b[0m \u001b[0mdevice_name\u001b[0m \u001b[0;34m!=\u001b[0m \u001b[0;34m'/device:GPU:0'\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m----> 4\u001b[0;31m   \u001b[0;32mraise\u001b[0m \u001b[0mSystemError\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0;34m'GPU device not found'\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m      5\u001b[0m \u001b[0mprint\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0;34m'Found GPU at: {}'\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mformat\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mdevice_name\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
+            "\u001b[0;31mSystemError\u001b[0m: GPU device not found"
+          ]
+        }
+      ],
+      "source": [
+        "import tensorflow as tf\n",
+        "device_name = tf.test.gpu_device_name()\n",
+        "if device_name != '/device:GPU:0':\n",
+        "  raise SystemError('GPU device not found')\n",
+        "print('Found GPU at: {}'.format(device_name))"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "v3fE7KmKRDsH"
+      },
+      "source": [
+        "## Observe TensorFlow speedup on GPU relative to CPU\n",
+        "\n",
+        "This example constructs a typical convolutional neural network layer over a\n",
+        "random image and manually places the resulting ops on either the CPU or the GPU\n",
+        "to compare execution speed."
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 22,
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "Y04m-jvKRDsJ",
+        "outputId": "d6de37ce-60f5-4d2e-cb93-a294c23794ab"
+      },
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "First 5 X features:\n",
+            "[[-0.00933187  0.39098105]\n",
+            " [ 0.95457387 -0.47375583]\n",
+            " [ 0.9185256  -0.42519648]\n",
+            " [ 0.41276802 -0.37638459]\n",
+            " [-0.84532016  0.52879908]]\n",
+            "\n",
+            "First 5 y labels:\n",
+            "[1 1 1 1 0]\n"
+          ]
+        }
+      ],
+      "source": [
+        "from sklearn.datasets import make_moons\n",
+        "\n",
+        "\n",
+        "# Make 1000 samples\n",
+        "n_samples = 1000\n",
+        "\n",
+        "# Create circles\n",
+        "X, y = make_moons(n_samples,\n",
+        "                    noise=0.03, # a little bit of noise to the dots\n",
+        "                    random_state=42) # keep random state so we get the same values\n",
+        "print(f\"First 5 X features:\\n{X[:5]}\")\n",
+        "print(f\"\\nFirst 5 y labels:\\n{y[:5]}\")\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# Make DataFrame of circle data\n",
+        "import pandas as pd\n",
+        "moon = pd.DataFrame({\"X1\": X[:, 0],\n",
+        "    \"X2\": X[:, 1],\n",
+        "    \"label\": y\n",
+        "})\n"
+      ],
+      "metadata": {
+        "id": "gXZ2fn8AhbCj"
+      },
+      "execution_count": 21,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# Turn data into tensors\n",
+        "# Otherwise this causes issues with computations later on\n",
+        "import torch\n",
+        "X = torch.from_numpy(X).type(torch.float)\n",
+        "y = torch.from_numpy(y).type(torch.float)\n",
+        "\n",
+        "# View the first five samples\n",
+        "X[:5], y[:5]"
+      ],
+      "metadata": {
+        "id": "9mNyHsjjihW4",
+        "outputId": "8e57e59b-25d9-4a33-fc21-26c871084a8f",
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        }
+      },
+      "execution_count": 23,
+      "outputs": [
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": [
+              "(tensor([[-0.0093,  0.3910],\n",
+              "         [ 0.9546, -0.4738],\n",
+              "         [ 0.9185, -0.4252],\n",
+              "         [ 0.4128, -0.3764],\n",
+              "         [-0.8453,  0.5288]]),\n",
+              " tensor([1., 1., 1., 1., 0.]))"
+            ]
+          },
+          "metadata": {},
+          "execution_count": 23
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# Split data into train and test sets\n",
+        "from sklearn.model_selection import train_test_split\n",
+        "\n",
+        "X_train, X_test, y_train, y_test = train_test_split(X,\n",
+        "                                                    y,\n",
+        "                                                    test_size=0.2, # 20% test, 80% train\n",
+        "                                                    random_state=42) # make the random split reproducible\n",
+        "\n",
+        "len(X_train), len(X_test), len(y_train), len(y_test)"
+      ],
+      "metadata": {
+        "id": "qCznwOJTjjIb",
+        "outputId": "6908e451-ee5a-4115-eb41-240a192c5a3c",
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        }
+      },
+      "execution_count": 24,
+      "outputs": [
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": [
+              "(800, 200, 800, 200)"
+            ]
+          },
+          "metadata": {},
+          "execution_count": 24
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "colab": {
+      "name": "TensorFlow with GPU",
+      "provenance": [],
+      "gpuType": "T4",
+      "include_colab_link": true
+    },
+    "kernelspec": {
+      "display_name": "Python 3",
+      "name": "python3"
+    },
+    "accelerator": "GPU"
+  },
+  "nbformat": 4,
+  "nbformat_minor": 0
+}
